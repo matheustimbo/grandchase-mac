@@ -1,0 +1,45 @@
+#!/bin/zsh
+# Abre o Grand Chase (Steam app 985810) na bottle do CrossOver.
+# Config vencedora: bottle CrossOver + Steam logada + renderer nativo D3DMetal
+# (NAO usar DXVK -> tela preta; NAO usar nosso wine-cx -> Steam nao loga).
+# Themida resolvido via overrides native dos runtimes VC++ no registro da bottle.
+#
+# Uso:
+#   grandchase          -> sobe a Steam (se preciso) e abre o jogo via -applaunch
+#   grandchase steam    -> abre so o cliente Steam da bottle
+#   grandchase kill      -> fecha tudo (Steam + jogo) na bottle
+
+CX="/Applications/CrossOver.app/Contents/SharedSupport/CrossOver"
+BOTTLE="Steam"
+STEAM='C:\Program Files (x86)\Steam\Steam.exe'
+
+steam_running() { pgrep -f "[S]team.exe" >/dev/null; }
+
+start_steam() {
+  steam_running && return 0
+  "$CX/bin/cxstart" --bottle "$BOTTLE" "$STEAM" -silent >/dev/null 2>&1 &
+  # espera logar (ate ~60s)
+  local L="$HOME/Library/Application Support/CrossOver/Bottles/Steam/drive_c/Program Files (x86)/Steam/logs/connection_log.txt"
+  for i in $(seq 1 12); do
+    sleep 5
+    grep -E "$(date '+%Y-%m-%d %H')" "$L" 2>/dev/null | grep -qi "RecvMsgClientLogOnResponse" && return 0
+  done
+  return 0
+}
+
+case "$1" in
+  kill)
+    pkill -9 -f "[S]team.exe|[s]teamwebhelper|[G]randChase" 2>/dev/null
+    echo "GrandChase/Steam encerrados"
+    ;;
+  steam)
+    "$CX/bin/cxstart" --bottle "$BOTTLE" "$STEAM"
+    ;;
+  *)
+    echo "Subindo a Steam (login)..."
+    start_steam
+    echo "Abrindo o GrandChase..."
+    "$CX/bin/cxstart" --bottle "$BOTTLE" "$STEAM" -applaunch 985810 >/dev/null 2>&1 &
+    echo "Pronto. O jogo abre em alguns segundos (passa por loading)."
+    ;;
+esac
