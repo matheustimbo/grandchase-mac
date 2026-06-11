@@ -2,8 +2,11 @@
 # setup.sh — aplica o fix do Themida ("Wrong DLL present") numa bottle CrossOver
 # que já tem a Steam + GrandChase instalados e logados.
 #
-# O que faz: força os runtimes do Visual C++ a carregarem as versões GENUÍNAS
-# (native) em vez das builtin do Wine — é isso que o anti-tamper Themida exige.
+# O que faz:
+#  1. força os runtimes do Visual C++ a carregarem as versões GENUÍNAS (native)
+#     em vez das builtin do Wine — é isso que o anti-tamper Themida exige.
+#  2. configura um virtual desktop só pro GrandChase, pra alt-tab não congelar
+#     o jogo (perda/recuperação do device D3D9 ao trocar de foco).
 # NÃO mexe em d3d9 (o renderer nativo D3DMetal do CrossOver é o que funciona).
 #
 # Uso: ./setup.sh [NOME_DA_BOTTLE]   (default: Steam)
@@ -12,6 +15,10 @@ set -e
 CX="/Applications/CrossOver.app/Contents/SharedSupport/CrossOver"
 BOTTLE="${1:-Steam}"
 BPATH="$HOME/Library/Application Support/CrossOver/Bottles/$BOTTLE"
+
+# Resolução do virtual desktop — CASE com a resolução que você escolher DENTRO
+# do jogo (Opções), senão dá borda ou corte. Default = nativa do jogo (4:3).
+VDESKTOP_RES="${VDESKTOP_RES:-1024x768}"
 
 [ -d "$CX" ] || { echo "CrossOver não encontrado em $CX"; exit 1; }
 [ -d "$BPATH" ] || { echo "Bottle '$BOTTLE' não encontrada em $BPATH"; exit 1; }
@@ -50,6 +57,22 @@ rm -f "$BPATH/drive_c/gc_themida_fix.reg"
 echo "==> Verificando overrides aplicados…"
 "$CX/bin/cxstart" --bottle "$BOTTLE" -- reg query 'HKCU\Software\Wine\DllOverrides' 2>/dev/null \
   | grep -iE "vcruntime140|msvcp140|concrt140|d3dx9" || echo "  (não consegui ler — tente rodar o jogo mesmo assim)"
+
+echo "==> Configurando virtual desktop pro GrandChase ($VDESKTOP_RES)…"
+VREG='C:\gc_vdesktop.reg'
+cat > "$BPATH/drive_c/gc_vdesktop.reg" <<EOF
+REGEDIT4
+
+[HKEY_CURRENT_USER\\Software\\Wine\\AppDefaults\\GrandChase.exe\\Explorer]
+"Desktop"="GrandChase"
+
+[HKEY_CURRENT_USER\\Software\\Wine\\Explorer\\Desktops]
+"GrandChase"="$VDESKTOP_RES"
+EOF
+"$CX/bin/cxstart" --bottle "$BOTTLE" -- regedit /S "$VREG" >/dev/null 2>&1
+sleep 2
+rm -f "$BPATH/drive_c/gc_vdesktop.reg"
+echo "    (mudou a resolução no jogo? rode: VDESKTOP_RES=LARGURAxALTURA ./setup.sh)"
 
 echo ""
 echo "Pronto. Agora use ./grandchase para jogar."

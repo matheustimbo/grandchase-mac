@@ -60,8 +60,23 @@ grandchase kill     # fecha tudo
 ```
 
 Sequência de boot: `UnEnter` → `Loading 1..16` → intro (`State 25`, vídeo `.avi`
-fica preto mas avança sozinho) → tela de loading **visível** → lobby. O jogo conecta
-no servidor (`:9501`). A primeira abertura demora (compila shaders).
+fica preto mas avança sozinho) → tela de loading **visível** → lobby (`State 15` +
+`EnterChannel`). O jogo conecta no servidor (`:9501`). A primeira abertura demora
+(compila shaders).
+
+### Alt-tab congela o jogo
+
+Direct3D 9 sob Wine perde o device gráfico ao perder o foco; ao voltar (alt-tab),
+ele recupera o device e re-sincroniza a rede — o jogo trava alguns segundos. O
+`setup.sh` já cria um **virtual desktop** só pro GrandChase (`AppDefaults\GrandChase.exe`),
+que isola o foco e elimina o freeze longo.
+
+Importante: a resolução do virtual desktop tem que **casar** com a que você escolher
+nas opções do jogo, senão fica com borda/corte:
+
+```sh
+VDESKTOP_RES=1728x1117 ./setup.sh    # use a SUA resolução
+```
 
 ---
 
