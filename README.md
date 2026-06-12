@@ -1,5 +1,7 @@
 # 🎮 GrandChase Classic no macOS (Apple Silicon)
 
+**🇧🇷 Português** · [🇺🇸 English](README.en.md)
+
 Rodar o **GrandChase Classic** (Steam, app `985810`) num Mac M1/M2/M3 — **100% grátis, sem CrossOver**.
 
 Verificado: **MacBook Pro M1 Max, macOS 27**, junho/2026 — entra no lobby e joga.
