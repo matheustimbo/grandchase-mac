@@ -1,48 +1,49 @@
 #!/bin/zsh
-# Abre o Grand Chase (Steam app 985810) na bottle do CrossOver.
-# Config vencedora: bottle CrossOver + Steam logada + renderer nativo (wined3d/D3DMetal)
-# Themida resolvido via overrides native dos runtimes VC++ no registro da bottle.
+# GrandChase 100% GRÁTIS no macOS (sem CrossOver) — wine-proton + DXVK 2.7 + MoltenVK 1.4.1
+# Componentes em ~/Games (independentes do GameHub). Verificado: M1 Max, macOS 27.
 #
-# Uso:
-#   grandchase          -> abre o jogo (sobe a Steam se preciso)
-#   grandchase steam    -> abre so o cliente Steam da bottle
-#   grandchase kill     -> fecha tudo (Steam + jogo)
+#   grandchase        -> sobe a Steam (login) e abre o jogo
+#   grandchase steam  -> abre só a Steam (pra logar / ver biblioteca)
+#   grandchase kill   -> fecha tudo
 
-CX="/Applications/CrossOver.app/Contents/SharedSupport/CrossOver"
-BOTTLE="Steam"
-STEAM='C:\Program Files (x86)\Steam\Steam.exe'
-CONNLOG="$HOME/Library/Application Support/CrossOver/Bottles/Steam/drive_c/Program Files (x86)/Steam/logs/connection_log.txt"
+WP="$HOME/Games/wine-proton"
+WINE="$WP/bin/wine"
+PFX="$HOME/Games/gc-proton"
+STEAM='C:\Program Files (x86)\Steam\steam.exe'
+GAMEDIR="$PFX/drive_c/Program Files (x86)/Steam/steamapps/common/GrandChase"
+CONNLOG="$PFX/drive_c/Program Files (x86)/Steam/logs/connection_log.txt"
 
-# Steam "de pe" = webhelper OU Steam.exe rodando (webhelper indica que ja logou)
-steam_up() { pgrep -f "steamwebhelper.exe" >/dev/null 2>&1 || pgrep -f "[S]team.exe" >/dev/null 2>&1; }
+export WINEPREFIX="$PFX"
+export WINEDEBUG=-all
+export DYLD_LIBRARY_PATH="$HOME/Games/mvk141"
+export DYLD_FALLBACK_LIBRARY_PATH="$WP/lib:$WP/lib/wine/x86_64-unix"
+export WINEDLLPATH="$HOME/Games/dxvk27/wine"
+export WINEESYNC=1
+export WINEENGINE_GPTK_DXGI_SPOOF_ENABLED=1
+export DXVK_CONFIG_FILE="$GAMEDIR/dxvk.conf"
 
-launch_game() { "$CX/bin/cxstart" --bottle "$BOTTLE" "$STEAM" -applaunch 985810 >/dev/null 2>&1 & }
+steam_up() { pgrep -f "steamwebhelper.exe" >/dev/null 2>&1 || pgrep -f "[s]team.exe" >/dev/null 2>&1; }
 
 case "$1" in
   kill)
-    pkill -9 -f "[S]team.exe|[s]teamwebhelper|[G]randChase" 2>/dev/null
+    pkill -9 -f "[s]team.exe|steamwebhelper|[G]randChase" 2>/dev/null
+    "$WP/bin/wineserver" -k 2>/dev/null
     echo "GrandChase/Steam encerrados"
     ;;
   steam)
-    "$CX/bin/cxstart" --bottle "$BOTTLE" "$STEAM"
+    "$WINE" "$STEAM"
     ;;
   *)
-    if steam_up; then
-      echo "Steam ja aberta — abrindo o GrandChase..."
-      launch_game
-    else
+    if ! steam_up; then
       echo "Subindo a Steam (login)..."
-      "$CX/bin/cxstart" --bottle "$BOTTLE" "$STEAM" -silent >/dev/null 2>&1 &
-      # espera o webhelper subir (Steam pronta) + logar — no maximo ~45s
-      ok=0
-      for i in $(seq 1 45); do
-        sleep 1
-        if steam_up && [ -n "$(find "$CONNLOG" -newermt '-40 seconds' 2>/dev/null)" ] \
-           && grep -q "Logged On" "$CONNLOG" 2>/dev/null; then ok=1; break; fi
+      "$WINE" "$STEAM" -silent >/dev/null 2>&1 &
+      for i in $(seq 1 24); do
+        sleep 3
+        grep -E "$(date '+%Y-%m-%d %H')" "$CONNLOG" 2>/dev/null | grep -qiE "RecvMsgClientLogOnResponse" && break
       done
-      [ "$ok" = 1 ] && echo "Steam logada — abrindo o GrandChase..." || echo "(login demorou; abrindo mesmo assim)"
-      launch_game
     fi
-    echo "Pronto. O jogo abre em alguns segundos (passa por loading)."
+    echo "Abrindo o GrandChase..."
+    "$WINE" "$STEAM" -applaunch 985810 >/dev/null 2>&1 &
+    echo "Pronto. Passa pelo loading e entra no lobby."
     ;;
 esac

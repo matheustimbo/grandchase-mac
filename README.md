@@ -1,5 +1,29 @@
 # GrandChase Classic no macOS (Apple Silicon)
 
+## ✅ Caminho 100% GRÁTIS (sem CrossOver) — recomendado
+
+Stack livre que roda GrandChase no macOS 27 (M1 Max, verificado):
+
+| Camada | Componente | Por quê |
+|---|---|---|
+| Wine | **wine-proton 10** | "new wow64" → 32-bit no macOS 27 + webhelper da Steam renderiza (login funciona) |
+| DirectX→Vulkan | **DXVK 2.7** | renderiza o D3D9 do jogo (par com MoltenVK 1.4.1) |
+| Vulkan→Metal | **MoltenVK v1.4.1** | precisa ser o PAR moderno com DXVK 2.7 (senão modelos 3D somem ou device falha) |
+| Themida | runtimes VC++ genuínos + overrides `native` | passa o "Wrong DLL present" |
+| Render fix | `dxvk.conf`: `d3d9.floatEmulation = Strict` | — |
+
+Componentes (wine-proton, MoltenVK) vêm do GameHub (grátis) mas rodam fora dele.
+Detalhes do env: `RECIPE-FREE.txt`. Launcher: `grandchase` (sobe Steam + `-applaunch 985810`).
+
+**A combinação importa:** DXVK 2.7 **+** MoltenVK **1.4.1**. Combos que falham:
+dxvk-1.10.3 + MoltenVK-1.2.1 (4 shaders não compilam → personagens invisíveis);
+dxvk-1.10.3 + MoltenVK-1.4.x (device falha); MoltenVK com features "fingidas" (render errado).
+
+---
+
+## Alternativa: CrossOver (pago / trial)
+
+
 Como rodar o **GrandChase Classic** (Steam, app `985810`) num Mac M-series, de graça,
 via [CrossOver](https://www.codeweavers.com/crossover) / Wine — incluindo passar pela
 proteção **Themida** e pela tela preta do DXVK.
