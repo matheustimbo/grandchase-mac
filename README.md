@@ -1,142 +1,144 @@
-# 🎮 GrandChase Classic no macOS (Apple Silicon)
+# 🎮 GrandChase Classic on macOS (Apple Silicon)
 
-**🇧🇷 Português** · [🇺🇸 English](README.en.md)
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white) ![macOS 27](https://img.shields.io/badge/macOS%2027-verified-success) ![Free](https://img.shields.io/badge/100%25%20free-no%20CrossOver-brightgreen) ![Stack](https://img.shields.io/badge/stack-wine--proton%20%2B%20DXVK%20%2B%20MoltenVK-8A2BE2) ![License](https://img.shields.io/github/license/matheustimbo/grandchase-mac?color=blue)
 
-Rodar o **GrandChase Classic** (Steam, app `985810`) num Mac M1/M2/M3 — **100% grátis, sem CrossOver**.
+[🇧🇷 Português](README.pt.md) · **🇺🇸 English**
 
-Verificado: **MacBook Pro M1 Max, macOS 27**, junho/2026 — entra no lobby e joga.
+Run **GrandChase Classic** (Steam, app `985810`) on an M1/M2/M3 Mac — **100% free, no CrossOver**.
 
-> **Por que é difícil:** o GrandChase é só Windows, protegido pelo anti-tamper **Themida**
-> e renderizado em **Direct3D 9**. Rodar no Mac exige uma pilha de tradução
-> (Wine → DXVK → MoltenVK → Metal) **e a combinação exata** de versões. Trocar qualquer
-> peça quebra de um jeito diferente. Este repo documenta a combinação que funciona e dá um
-> comando `grandchase` pra abrir o jogo.
+Verified: **MacBook Pro M1 Max, macOS 27**, June 2026 — reaches the lobby and plays.
+
+> **Why it's hard:** GrandChase is Windows-only, protected by the **Themida** anti-tamper,
+> and rendered in **Direct3D 9**. Running it on a Mac needs a translation stack
+> (Wine → DXVK → MoltenVK → Metal) **and the exact combination** of versions. Swapping any
+> piece breaks it in a different way. This repo documents the combo that works and ships a
+> `grandchase` command to launch the game.
 
 ---
 
-## A pilha que funciona
+## The stack that works
 
-| Camada | Componente | Papel |
+| Layer | Component | Role |
 |---|---|---|
-| Wine | **wine-proton 10** | "new wow64" → roda 32-bit no macOS 27 **e** renderiza o login da Steam (CEF) |
-| DirectX → Vulkan | **DXVK 2.7** | traduz o D3D9 do jogo |
-| Vulkan → Metal | **MoltenVK v1.4.1** | precisa ser o **par moderno** com o DXVK 2.7 |
-| Anti-tamper | runtimes **VC++ genuínos** + overrides `native` | passa o "Wrong DLL present" do Themida |
-| Render | `dxvk.conf`: `d3d9.floatEmulation = Strict` | corrige cálculo de vértice |
+| Wine | **wine-proton 10** | "new wow64" → runs 32-bit on macOS 27 **and** renders the Steam login (CEF) |
+| DirectX → Vulkan | **DXVK 2.7** | translates the game's D3D9 |
+| Vulkan → Metal | **MoltenVK v1.4.1** | must be the **modern pair** with DXVK 2.7 |
+| Anti-tamper | genuine **VC++ runtimes** + `native` overrides | gets past Themida's "Wrong DLL present" |
+| Render | `dxvk.conf`: `d3d9.floatEmulation = Strict` | fixes vertex math |
 
-**A combinação importa.** DXVK 2.7 **+** MoltenVK **1.4.1** é o par que funciona. Veja
-[becos sem saída](#-becos-sem-saída-pra-não-perder-tempo) pro que NÃO funciona.
+**The combination matters.** DXVK 2.7 **+** MoltenVK **1.4.1** is the pair that works. See
+[dead ends](#-dead-ends-to-save-you-time) for what does NOT.
 
 ---
 
-## Pré-requisitos
+## Prerequisites
 
-- Mac **Apple Silicon** + **Rosetta 2** (`softwareupdate --install-rosetta --agree-to-license`)
-- Conta **Steam** com o **GrandChase** na biblioteca
-- Os 3 componentes livres: **wine-proton 10**, **DXVK 2.7**, **MoltenVK v1.4.1**
+- **Apple Silicon** Mac + **Rosetta 2** (`softwareupdate --install-rosetta --agree-to-license`)
+- A **Steam** account with **GrandChase** in your library
+- The 3 free components: **wine-proton 10**, **DXVK 2.7**, **MoltenVK v1.4.1**
 
-### De onde vêm os componentes
+### Where the components come from
 
-A forma mais fácil de obter wine-proton e MoltenVK é pelo **[GameHub](https://www.gamehubapp.com/)**
-(grátis), que os baixa — depois eles rodam **fora** dele. O DXVK 2.7 pode ser compilado do
-[fonte do DXVK](https://github.com/doitsujin/dxvk) (ou do fonte LGPL do CrossOver). Coloque tudo em `~/Games/`:
+The easiest way to get wine-proton and MoltenVK is via **[GameHub](https://www.gamehubapp.com/)**
+(free), which downloads them — then they run **outside** of it. DXVK 2.7 can be built from the
+[DXVK source](https://github.com/doitsujin/dxvk) (or the CrossOver LGPL source). Place everything under `~/Games/`:
 
 ```
 ~/Games/wine-proton/          # wine-proton 10 (bin/, lib/)
 ~/Games/dxvk27/wine/          # DXVK 2.7 (x86_64-windows/{d3d9,d3d11,dxgi}.dll)
 ~/Games/mvk141/libMoltenVK.dylib
-~/Games/gc-proton/            # prefix Wine (criado no setup)
+~/Games/gc-proton/            # Wine prefix (created during setup)
 ```
 
 ---
 
-## Instalação
+## Install
 
 ```sh
 git clone https://github.com/matheustimbo/grandchase-mac.git
 cd grandchase-mac
 chmod +x grandchase setup.sh
 
-# 1. Crie o prefix e instale a Steam + GrandChase nele (via wine-proton).
-#    Faça login na Steam (a janela renderiza) e instale o jogo.
+# 1. Create the prefix and install Steam + GrandChase into it (via wine-proton).
+#    Log into Steam (the window renders) and install the game.
 
-# 2. Aplique o fix do Themida (runtimes VC++ genuínos como 'native') + dxvk.conf:
+# 2. Apply the Themida fix (genuine VC++ runtimes as 'native') + dxvk.conf:
 ./setup.sh ~/Games/gc-proton
 
-# 3. Instale o comando:
+# 3. Install the command:
 cp grandchase /opt/homebrew/bin/
 ```
 
-O env exato de launch está em **[`RECIPE-FREE.txt`](RECIPE-FREE.txt)**.
+The exact launch environment is in **[`RECIPE-FREE.txt`](RECIPE-FREE.txt)**.
 
 ---
 
-## Como jogar
+## How to play
 
 ```sh
-grandchase          # sobe a Steam (login) e abre o jogo
-grandchase steam    # abre só a Steam (login / biblioteca)
-grandchase kill     # fecha tudo
+grandchase          # starts Steam (login) and launches the game
+grandchase steam    # opens Steam only (login / library)
+grandchase kill     # closes everything
 ```
 
-Sequência de boot: `UnEnter` → `Loading 1..16` → loading visível → lobby (`State 15`).
-A 1ª abertura demora (compila shaders).
+Boot sequence: `UnEnter` → `Loading 1..16` → visible loading → lobby (`State 15`).
+The first launch is slow (compiling shaders).
 
 ---
 
 ## 🩹 Troubleshooting
 
-| Sintoma | Causa | Solução |
+| Symptom | Cause | Fix |
 |---|---|---|
-| `Wrong DLL present` (Themida) | runtimes VC++ builtin do Wine | runtimes **genuínos** + overrides `native` (faz `setup.sh`) |
-| Login da Steam não renderiza | webhelper CEF no Wine errado | use **wine-proton** (renderiza o CEF) |
-| **Personagens 3D / cursor invisíveis** | par DXVK×MoltenVK errado | **DXVK 2.7 + MoltenVK 1.4.1** (par moderno) |
-| `Install DirectX...` | device do DXVK não cria | MoltenVK incompatível com o DXVK — use o par certo |
-| Trava em `UnEnter` ao abrir o `.exe` direto | falta o ambiente da Steam | lance via `-applaunch 985810` (o launcher já faz) |
-| **Engasga ao entrar em cena nova** | DXVK compilando shader (síncrono) | normal; o cache (`.dxvk-cache`) faz **não repetir** — pré-aqueça jogando seus modos 1× |
-| Trava ~1min no alt-tab e desconecta | perda de device D3D9 + timeout do servidor | inerente; minimize o tempo em segundo plano |
+| `Wrong DLL present` (Themida) | Wine's builtin VC++ runtimes | **genuine** runtimes + `native` overrides (done by `setup.sh`) |
+| Steam login won't render | wrong Wine for the CEF webhelper | use **wine-proton** (it renders CEF) |
+| **Invisible 3D characters / cursor** | wrong DXVK×MoltenVK pair | **DXVK 2.7 + MoltenVK 1.4.1** (modern pair) |
+| `Install DirectX...` | DXVK can't create the device | MoltenVK incompatible with that DXVK — use the right pair |
+| Hangs at `UnEnter` when launching the `.exe` directly | missing Steam launch env | launch via `-applaunch 985810` (the launcher does this) |
+| **Stutters when entering a new scene** | DXVK compiling shaders (synchronous) | normal; the cache (`.dxvk-cache`) makes it **not repeat** — pre-warm by playing your modes once |
+| ~1min freeze on alt-tab, then disconnect | D3D9 device loss + server timeout | inherent; minimize time in the background |
 
-### Sobre os engasgos de shader
-O Metal/MoltenVK **não suporta** a compilação assíncrona (Graphics Pipeline Library), então a
-**primeira** visita a cada cena tem um engasgo enquanto o DXVK compila. O `dxvk.conf` já liga o
-**cache em disco** (`enableStateCache`) — então cada cena compila **uma vez na vida** e nunca mais
-trava ali, mesmo após reiniciar. Jogue seus modos uma vez pra "pré-aquecer" e fica liso.
-
----
-
-## 🚧 Becos sem saída (pra não perder tempo)
-
-- **wine puro / build mínimo do fonte CrossOver** → o webhelper CEF da Steam não renderiza (não loga).
-- **GPTK 7.7 / WhiskyWine** → 32-bit não funciona no macOS 27.
-- **CrossOver 24 (Sikarugir)** → 32-bit OK, mas janela CEF da Steam fica 0×0.
-- **dxvk-1.10.3 + MoltenVK 1.2.1** → 4 shaders não compilam → personagens invisíveis.
-- **dxvk-1.10.3 + MoltenVK 1.4.x** → falha ao criar o device ("Install DirectX").
-- **MoltenVK com features "fingidas"** (geometryShader etc. forçados) → render errado.
-- **`d3d9` NÃO é o gatilho do Themida** — é o runtime VC++. Trocar d3d9 não resolve o "Wrong DLL".
-- **Lançar `GrandChase.exe` direto** → trava esperando o ambiente da Steam; use `-applaunch`.
+### About shader stutter
+Metal/MoltenVK does **not** support asynchronous pipeline compilation (Graphics Pipeline
+Library), so the **first** visit to each scene stutters while DXVK compiles. `dxvk.conf` enables
+the **on-disk cache** (`enableStateCache`), so each scene compiles **once ever** and never stutters
+there again, even after a restart. Play through your modes once to "pre-warm" and it's smooth.
 
 ---
 
-## 💸 Alternativa: CrossOver (pago / trial)
+## 🚧 Dead ends (to save you time)
 
-Antes de achar a pilha grátis, o caminho que funcionou foi o **CrossOver** (trial de 14 dias).
-Lá o render usa o **D3DMetal nativo** (wined3d → Metal), não DXVK. Resumo:
-bottle CrossOver + runtimes VC++ genuínos (Themida) + renderer nativo + `-applaunch`.
-O `setup.sh` aplica os overrides do Themida tanto numa bottle CrossOver quanto no prefix wine-proton.
-
-Funciona, mas o **wine-proton grátis acima é o caminho recomendado**.
+- **plain wine / minimal CrossOver-source build** → Steam's CEF webhelper won't render (can't log in).
+- **GPTK 7.7 / WhiskyWine** → 32-bit doesn't work on macOS 27.
+- **CrossOver 24 (Sikarugir)** → 32-bit OK, but the Steam CEF window is 0×0.
+- **dxvk-1.10.3 + MoltenVK 1.2.1** → 4 shaders fail to compile → invisible characters.
+- **dxvk-1.10.3 + MoltenVK 1.4.x** → device creation fails ("Install DirectX").
+- **MoltenVK with "faked" features** (forced geometryShader etc.) → wrong rendering.
+- **`d3d9` is NOT the Themida trigger** — the VC++ runtime is. Swapping d3d9 won't fix "Wrong DLL".
+- **Launching `GrandChase.exe` directly** → hangs waiting for the Steam env; use `-applaunch`.
 
 ---
 
-## Créditos
+## 💸 Alternative: CrossOver (paid / trial)
 
-Construído sobre projetos open-source: [Wine](https://www.winehq.org/)/[Proton](https://github.com/ValveSoftware/Proton),
+Before finding the free stack, the path that worked was **CrossOver** (14-day trial). There the
+renderer uses native **D3DMetal** (wined3d → Metal), not DXVK. Summary: CrossOver bottle + genuine
+VC++ runtimes (Themida) + native renderer + `-applaunch`. `setup.sh` applies the Themida overrides
+to either a CrossOver bottle or the wine-proton prefix.
+
+It works, but the **free wine-proton path above is the recommended one**.
+
+---
+
+## Credits
+
+Built on open-source projects: [Wine](https://www.winehq.org/)/[Proton](https://github.com/ValveSoftware/Proton),
 [DXVK](https://github.com/doitsujin/dxvk), [MoltenVK](https://github.com/KhronosGroup/MoltenVK).
-Componentes obtidos via [GameHub](https://www.gamehubapp.com/). Themida © Oreans.
+Components obtained via [GameHub](https://www.gamehubapp.com/). Themida © Oreans.
 
-> Não afiliado à KOG / Playpark / Valve. Rode jogos da **sua própria conta**.
-> Este repo só documenta configuração de compatibilidade — não distribui o jogo nem burla DRM.
+> Not affiliated with KOG / Playpark / Valve. Run games from **your own account**.
+> This repo only documents compatibility configuration — it does not distribute the game or bypass DRM.
 
-## Licença
+## License
 
-[MIT](LICENSE) — para os scripts e a documentação deste repositório.
+[MIT](LICENSE) — for the scripts and documentation in this repository.
