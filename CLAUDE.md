@@ -14,6 +14,14 @@ Componentes em `~/Games/` (wine-proton, dxvk27, mvk141, prefix gc-proton). Env e
 DXVK 2.7 / MoltenVK 1.4.1 (outras combinações → invisível ou device-fail; ver becos abaixo).
 A seção CrossOver abaixo é a alternativa paga (foi o 1º caminho que funcionou).
 
+**Como obter os componentes:** `./fetch.sh` baixa o **par casado** em versão FIXA do upstream —
+DXVK 2.7 (doitsujin/dxvk, dir `x64` → `~/Games/dxvk27/wine/x86_64-windows/`) e MoltenVK 1.4.1
+(KhronosGroup, asset `MoltenVK-macos.tar`, **NÃO** o `-privateapi` → beco) em `~/Games/mvk141/`. O
+wine-proton (2.1G) NÃO é baixado pelo script (vem do GameHub). CAVEAT: o DXVK que o autor validou
+foi compilado do fonte LGPL do CrossOver; o `fetch.sh` instala o release upstream do **mesmo 2.7**
+(builds diferentes — não byte-iguais — mas mesma versão). Se o render quebrar com o upstream,
+compilar o 2.7 do fonte é o plano B.
+
 ---
 
 ## A receita que funciona (resumo; passos humanos no README)

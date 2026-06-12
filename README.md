@@ -39,16 +39,28 @@ Verified: **MacBook Pro M1 Max, macOS 27**, June 2026 — reaches the lobby and 
 
 ### Where the components come from
 
-The easiest way to get wine-proton and MoltenVK is via **[GameHub](https://www.gamehubapp.com/)**
-(free), which downloads them — then they run **outside** of it. DXVK 2.7 can be built from the
-[DXVK source](https://github.com/doitsujin/dxvk) (or the CrossOver LGPL source). Place everything under `~/Games/`:
+Run **[`fetch.sh`](fetch.sh)** — it downloads the two **version-pinned** pieces (the matched pair
+that actually renders the game) straight from upstream GitHub Releases, into `~/Games/`:
+
+- **DXVK 2.7** → `~/Games/dxvk27/wine/x86_64-windows/{d3d9,d3d11,dxgi}.dll`
+- **MoltenVK 1.4.1** → `~/Games/mvk141/libMoltenVK.dylib`
+
+The only piece `fetch.sh` does **not** download is **wine-proton 10** (~2 GB). Get it via
+**[GameHub](https://www.gamehubapp.com/)** (free) — it downloads wine-proton, which then runs
+**outside** of it — and put it at `~/Games/wine-proton/`. Final layout:
 
 ```
-~/Games/wine-proton/          # wine-proton 10 (bin/, lib/)
-~/Games/dxvk27/wine/          # DXVK 2.7 (x86_64-windows/{d3d9,d3d11,dxgi}.dll)
-~/Games/mvk141/libMoltenVK.dylib
-~/Games/gc-proton/            # Wine prefix (created during setup)
+~/Games/wine-proton/               # wine-proton 10 (bin/, lib/) — via GameHub
+~/Games/dxvk27/wine/               # DXVK 2.7 (x86_64-windows/{d3d9,d3d11,dxgi}.dll) — fetch.sh
+~/Games/mvk141/libMoltenVK.dylib   # MoltenVK 1.4.1 — fetch.sh
+~/Games/gc-proton/                 # Wine prefix (created during setup)
 ```
+
+> **Why pinned:** the **DXVK 2.7 + MoltenVK 1.4.1** pair is what renders the 3D. Pulling them from
+> GameHub is a version lottery (a GameHub reset is what broke this setup once) — `fetch.sh` grabs
+> the exact releases every time. The verified June 2026 run used a DXVK 2.7 built from the CrossOver
+> LGPL source; `fetch.sh` installs the upstream 2.7 release (same version), with building
+> [from source](https://github.com/doitsujin/dxvk) as the fallback.
 
 ---
 
@@ -57,15 +69,19 @@ The easiest way to get wine-proton and MoltenVK is via **[GameHub](https://www.g
 ```sh
 git clone https://github.com/matheustimbo/grandchase-mac.git
 cd grandchase-mac
-chmod +x grandchase setup.sh
+chmod +x grandchase setup.sh fetch.sh
 
-# 1. Create the prefix and install Steam + GrandChase into it (via wine-proton).
+# 1. Download the pinned DXVK 2.7 + MoltenVK 1.4.1 into ~/Games:
+./fetch.sh
+#    (wine-proton ~2 GB is NOT fetched — get it via GameHub; see "Where the components come from".)
+
+# 2. Create the prefix and install Steam + GrandChase into it (via wine-proton).
 #    Log into Steam (the window renders) and install the game.
 
-# 2. Apply the Themida fix (genuine VC++ runtimes as 'native') + dxvk.conf:
+# 3. Apply the Themida fix (genuine VC++ runtimes as 'native') + dxvk.conf:
 ./setup.sh ~/Games/gc-proton
 
-# 3. Install the command:
+# 4. Install the command:
 cp grandchase /opt/homebrew/bin/
 ```
 
@@ -134,7 +150,7 @@ It works, but the **free wine-proton path above is the recommended one**.
 
 Built on open-source projects: [Wine](https://www.winehq.org/)/[Proton](https://github.com/ValveSoftware/Proton),
 [DXVK](https://github.com/doitsujin/dxvk), [MoltenVK](https://github.com/KhronosGroup/MoltenVK).
-Components obtained via [GameHub](https://www.gamehubapp.com/). Themida © Oreans.
+DXVK and MoltenVK are pulled from their upstream releases by [`fetch.sh`](fetch.sh); wine-proton comes from [GameHub](https://www.gamehubapp.com/). Themida © Oreans.
 
 > Not affiliated with KOG / Playpark / Valve. Run games from **your own account**.
 > This repo only documents compatibility configuration — it does not distribute the game or bypass DRM.
