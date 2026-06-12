@@ -1,6 +1,6 @@
 # 🎮 GrandChase Classic no macOS (Apple Silicon)
 
-![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white) ![macOS 27](https://img.shields.io/badge/macOS%2027-verified-success) ![Free](https://img.shields.io/badge/100%25%20free-no%20CrossOver-brightgreen) ![Stack](https://img.shields.io/badge/stack-wine--proton%20%2B%20DXVK%20%2B%20MoltenVK-8A2BE2) ![License](https://img.shields.io/github/license/matheustimbo/grandchase-mac?color=blue)
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white) ![macOS 27](https://img.shields.io/badge/macOS%2027-verified-success) ![Free](https://img.shields.io/badge/100%25%20free-no%20CrossOver-brightgreen) ![Stack](https://img.shields.io/badge/stack-wine--proton%20%2B%20DXVK%20%2B%20MoltenVK-8A2BE2) ![License](https://img.shields.io/badge/license-MIT-blue)
 
 **🇧🇷 Português** · [🇺🇸 English](README.md)
 
