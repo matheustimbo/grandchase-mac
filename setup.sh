@@ -1,12 +1,12 @@
 #!/bin/zsh
-# setup.sh — aplica o fix do Themida + dxvk.conf num prefix Wine que já tem
-# a Steam + GrandChase instalados (caminho grátis: wine-proton).
+# setup.sh — aplica o fix do Themida num prefix Wine que já tem a Steam + GrandChase
+# instalados (caminho grátis: wine-proton).
 #
 # O que faz:
-#   1. Overrides 'native' pros runtimes VC++ -> passa o "Wrong DLL present" do Themida.
-#      (o Themida rejeita os runtimes builtin do Wine; precisa dos genuínos da Microsoft,
-#       normalmente já instalados pelo GrandChasePrerequisiteInstaller na 1ª execução.)
-#   2. Escreve o dxvk.conf na pasta do jogo (floatEmulation + cache de shader).
+#   Overrides 'native' pros runtimes VC++ -> passa o "Wrong DLL present" do Themida.
+#   (o Themida rejeita os runtimes builtin do Wine; precisa dos genuínos da Microsoft,
+#    normalmente já instalados pelo GrandChasePrerequisiteInstaller na 1ª execução.)
+#   O gatilho do Themida é o runtime VC++, NÃO o d3d9.
 #
 # Uso: ./setup.sh [PREFIX]      (default: ~/Games/gc-proton)
 #
@@ -16,7 +16,6 @@
 set -e
 PREFIX="${1:-$HOME/Games/gc-proton}"
 WINE="${WINE:-$HOME/Games/wine-proton/bin/wine}"
-GAMEDIR="$PREFIX/drive_c/Program Files (x86)/Steam/steamapps/common/GrandChase"
 
 [ -d "$PREFIX" ] || { echo "Prefix não encontrado: $PREFIX"; exit 1; }
 [ -x "$WINE" ]   || { echo "Wine não encontrado: $WINE (defina WINE=...)"; exit 1; }
@@ -43,18 +42,6 @@ EOF
 WINEPREFIX="$PREFIX" WINEDEBUG=-all "$WINE" regedit /S 'C:\gc_themida_fix.reg' >/dev/null 2>&1 || true
 sleep 2
 rm -f "$PREFIX/drive_c/gc_themida_fix.reg"
-
-if [ -d "$GAMEDIR" ]; then
-  echo "==> Escrevendo dxvk.conf na pasta do jogo…"
-  cat > "$GAMEDIR/dxvk.conf" <<'EOF'
-# GrandChase no Mac (wine-proton + DXVK 2.7 + MoltenVK 1.4.1)
-d3d9.floatEmulation = Strict
-dxvk.numCompilerThreads = 8
-dxvk.enableStateCache = True
-EOF
-else
-  echo "==> (jogo ainda não instalado em $GAMEDIR — copie o dxvk.conf.example pra lá depois)"
-fi
 
 echo ""
 echo "Pronto. Use ./grandchase para jogar."

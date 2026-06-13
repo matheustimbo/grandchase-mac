@@ -1,6 +1,0 @@
-# GrandChase no Mac (wine-proton + DXVK 2.7 + MoltenVK 1.4.1)
-d3d9.floatEmulation = Strict
-# compila shaders em paralelo nos 8 P-cores do M1 Max -> engasgos mais curtos
-dxvk.numCompilerThreads = 8
-# garante o cache de shader em disco (anti-stutter entre sessoes)
-dxvk.enableStateCache = True

@@ -5,22 +5,25 @@ humano (instalar e jogar). Este arquivo é o que te impede de refazer ~6h de
 investigação. Leia inteiro antes de propor qualquer mudança.
 
 **Objetivo:** rodar GrandChase Classic (Steam app `985810`) no macOS Apple Silicon.
-**Status:** FUNCIONA — joga no lobby. Verificado 2026-06-11, M1 Max, macOS 27.
+**Status:** FUNCIONA — joga no lobby, renderiza 3D. Verificado 2026-06-12, M1 Max, macOS 27.
 
-**CAMINHO PRINCIPAL = GRÁTIS (sem CrossOver):** wine-proton 10 + **DXVK 2.7 + MoltenVK
-v1.4.1** (par casado) + runtimes VC++ genuínos (Themida) + `dxvk.conf` floatEmulation.
-Componentes em `~/Games/` (wine-proton, dxvk27, mvk141, prefix gc-proton). Env exato em
-`RECIPE-FREE.txt`. Launcher `grandchase` lança via `-applaunch 985810`. NÃO trocar o par
-DXVK 2.7 / MoltenVK 1.4.1 (outras combinações → invisível ou device-fail; ver becos abaixo).
-A seção CrossOver abaixo é a alternativa paga (foi o 1º caminho que funcionou).
+**CAMINHO PRINCIPAL = GRÁTIS (sem CrossOver):** SÓ **wine-proton 10** + runtimes VC++ genuínos
+(Themida) + lançar via `-applaunch 985810`. O render é **wined3d → OpenGL → Metal** (o wined3d
+vem dentro do wine-proton). Único componente externo: o wine-proton (do GameHub). Prefix em
+`~/Games/gc-proton`. Env exato em `RECIPE-FREE.txt`.
 
-**Como obter os componentes:** `./fetch.sh` baixa o **par casado** em versão FIXA do upstream —
-DXVK 2.7 (doitsujin/dxvk, dir `x64` → `~/Games/dxvk27/wine/x86_64-windows/`) e MoltenVK 1.4.1
-(KhronosGroup, asset `MoltenVK-macos.tar`, **NÃO** o `-privateapi` → beco) em `~/Games/mvk141/`. O
-wine-proton (2.1G) NÃO é baixado pelo script (vem do GameHub). CAVEAT: o DXVK que o autor validou
-foi compilado do fonte LGPL do CrossOver; o `fetch.sh` instala o release upstream do **mesmo 2.7**
-(builds diferentes — não byte-iguais — mas mesma versão). Se o render quebrar com o upstream,
-compilar o 2.7 do fonte é o plano B.
+**CORREÇÃO IMPORTANTE (2026-06-12) — NÃO se confunda:** versões antigas desta doc diziam que o
+render era um "par casado DXVK 2.7 + MoltenVK 1.4.1". **É FALSO.** Provado por `vmmap` no processo
+rodando: o jogo carrega `wine-proton/lib/wine/x86_64-windows/wined3d.dll` + `d3d9.dll` (builtin) e
+**NUNCA o DXVK**. Sem override `native` pro d3d9, o builtin sempre vence — então `~/Games/dxvk27`
+(que na real tem DXVK 1.10.3, não 2.7), `WINEDLLPATH`, `dxvk.conf` e `DXVK_CONFIG_FILE` **nunca
+ativaram**. E um A/B removendo o override de MoltenVK 1.4.1 (`~/Games/mvk141`) renderizou
+**idêntico** usando o MoltenVK 1.3.0 embutido no wine-proton (`lib/libMoltenVK.dylib`) — logo o
+override também é dispensável (o MoltenVK é só passageiro do spoof de DXGI, não o backend do render,
+que é OpenGL). O `fetch.sh` e o `dxvk.conf.example` foram REMOVIDOS por isso. Não recrie esse caminho.
+
+A seção CrossOver abaixo é a alternativa paga (foi o 1º caminho que funcionou; lá o render é o
+D3DMetal nativo do CrossOver, também não-DXVK).
 
 ---
 

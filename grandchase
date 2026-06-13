@@ -1,6 +1,7 @@
 #!/bin/zsh
-# GrandChase 100% GRÁTIS no macOS (sem CrossOver) — wine-proton + DXVK 2.7 + MoltenVK 1.4.1
-# Componentes em ~/Games (independentes do GameHub). Verificado: M1 Max, macOS 27.
+# GrandChase 100% GRÁTIS no macOS (sem CrossOver) — wine-proton (wined3d → OpenGL → Metal)
+# Só precisa do wine-proton: ele traz o wined3d, o caminho GL→Metal e o MoltenVK embutido.
+# (DXVK/MoltenVK-override NÃO são usados — ver README. Verificado: M1 Max, macOS 27.)
 #
 #   grandchase        -> sobe a Steam (login) e abre o jogo
 #   grandchase steam  -> abre só a Steam (pra logar / ver biblioteca)
@@ -10,17 +11,13 @@ WP="$HOME/Games/wine-proton"
 WINE="$WP/bin/wine"
 PFX="$HOME/Games/gc-proton"
 STEAM='C:\Program Files (x86)\Steam\steam.exe'
-GAMEDIR="$PFX/drive_c/Program Files (x86)/Steam/steamapps/common/GrandChase"
 CONNLOG="$PFX/drive_c/Program Files (x86)/Steam/logs/connection_log.txt"
 
 export WINEPREFIX="$PFX"
 export WINEDEBUG=-all
-export DYLD_LIBRARY_PATH="$HOME/Games/mvk141"
 export DYLD_FALLBACK_LIBRARY_PATH="$WP/lib:$WP/lib/wine/x86_64-unix"
-export WINEDLLPATH="$HOME/Games/dxvk27/wine"
 export WINEESYNC=1
 export WINEENGINE_GPTK_DXGI_SPOOF_ENABLED=1
-export DXVK_CONFIG_FILE="$GAMEDIR/dxvk.conf"
 
 steam_up() { pgrep -f "steamwebhelper.exe" >/dev/null 2>&1 || pgrep -f "[s]team.exe" >/dev/null 2>&1; }
 

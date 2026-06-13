@@ -1,25 +1,27 @@
-=== GRANDCHASE 100% GRÁTIS NO MAC (sem CrossOver) — RECEITA VENCEDORA ===
-Verificado 2026-06-11, M1 Max, macOS 27. Entrou no lobby.
+=== GRANDCHASE 100% GRÁTIS NO MAC (sem CrossOver) — RECEITA ===
+Verificado 2026-06-12, M1 Max, macOS 27. Entra no lobby e renderiza 3D normal.
 
-COMPONENTES (do GameHub, mas usados DIY):
-- Wine:     wine-proton 10.0  (~/Library/Application Support/com.gamemac.www/wine-engine/containers/wine_installations/10000033)
-- Graphics: DXVK 2.7  (compilado do fonte CrossOver, em ~/Games/dxvk27/wine)
-- Vulkan:   MoltenVK-v1.4.1  (~/Games/mvk141/libMoltenVK.dylib)  <- v1.4.1 PLAIN, nao private-api, nao v1.2.1
-- Prefix:   ~/Games/gc-proton  (Steam + jogo + runtimes VC++ genuinos + overrides Themida)
+RENDER (confirmado por vmmap no processo rodando):
+  GrandChase (D3D9) -> wined3d -> OpenGL -> AppleMetalOpenGLRenderer -> Metal
+  NÃO usa DXVK. NÃO depende de override de MoltenVK.
 
-O QUE FEZ CADA PEÇA:
-- wine-proton 10 -> 32-bit no macOS 27 + webhelper da Steam renderiza (login funciona)
-- DXVK 2.7 + MoltenVK 1.4.1 (PAR MODERNO) -> device cria E shaders compilam E personagens 3D renderizam
-  (DXVK 1.10.3 + v1.2.1 = 4 shaders falham -> invisivel; 1.10.3 + v1.4.x = device falha; o par 2.7+1.4.1 fecha)
-- Themida -> runtimes VC++ genuinos (system32) + overrides native (HKCU\Software\Wine\DllOverrides)
-- dxvk.conf no game: d3d9.floatEmulation = Strict
-- Login Steam: pelo webhelper (UI) na 1a vez; depois sessao salva
+COMPONENTE (único externo):
+- wine-proton 10  (do GameHub) -> traz wined3d, o caminho OpenGL->Metal, o MoltenVK
+  embutido (lib/libMoltenVK.dylib) e renderiza o webhelper CEF da Steam (login).
+- Prefix: ~/Games/gc-proton  (Steam + jogo + runtimes VC++ genuínos + overrides Themida)
+
+O QUE FAZ CADA PEÇA:
+- wine-proton 10 -> roda o app no macOS 27 + login da Steam (CEF) + wined3d (render 3D)
+- Themida ("Wrong DLL present") -> runtimes VC++ genuínos (system32) + overrides 'native'
+  no registro (HKCU\Software\Wine\DllOverrides). O gatilho é o runtime VC++, NÃO o d3d9.
+- Login Steam: pelo webhelper (UI) na 1ª vez; depois sessão salva.
 
 ENV DE LAUNCH:
   WINEPREFIX=~/Games/gc-proton
-  DYLD_LIBRARY_PATH=~/Games/mvk141
   DYLD_FALLBACK_LIBRARY_PATH=<wine-proton>/lib:<wine-proton>/lib/wine/x86_64-unix
-  WINEDLLPATH=~/Games/dxvk27/wine
-  WINEESYNC=1  WINEENGINE_GPTK_DXGI_SPOOF_ENABLED=1
-  DXVK_CONFIG_FILE=<game>/dxvk.conf
+  WINEESYNC=1   WINEENGINE_GPTK_DXGI_SPOOF_ENABLED=1
   Lança: <wine> steam.exe -silent  (espera login)  ;  depois  <wine> steam.exe -applaunch 985810
+
+NÃO É NECESSÁRIO (provado em runtime — ver "dead ends" no README):
+  DXVK (qualquer versão), override de MoltenVK 1.4.1, dxvk.conf, WINEDLLPATH.
+  O render passa por wined3d->OpenGL; nada disso chega a ser carregado.

@@ -1,18 +1,17 @@
 # 🎮 GrandChase Classic on macOS (Apple Silicon)
 
-![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white) ![macOS 27](https://img.shields.io/badge/macOS%2027-verified-success) ![Free](https://img.shields.io/badge/100%25%20free-no%20CrossOver-brightgreen) ![Stack](https://img.shields.io/badge/stack-wine--proton%20%2B%20DXVK%20%2B%20MoltenVK-8A2BE2) ![License](https://img.shields.io/badge/license-MIT-blue)
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white) ![macOS 27](https://img.shields.io/badge/macOS%2027-verified-success) ![Free](https://img.shields.io/badge/100%25%20free-no%20CrossOver-brightgreen) ![Stack](https://img.shields.io/badge/stack-wine--proton%20(wined3d%20%E2%86%92%20OpenGL%20%E2%86%92%20Metal)-8A2BE2) ![License](https://img.shields.io/badge/license-MIT-blue)
 
 [🇧🇷 Português](README.pt.md) · **🇺🇸 English**
 
 Run **GrandChase Classic** (Steam, app `985810`) on an M1/M2/M3 Mac — **100% free, no CrossOver**.
 
-Verified: **MacBook Pro M1 Max, macOS 27**, June 2026 — reaches the lobby and plays.
+Verified: **MacBook Pro M1 Max, macOS 27**, June 2026 — reaches the lobby and renders 3D.
 
-> **Why it's hard:** GrandChase is Windows-only, protected by the **Themida** anti-tamper,
-> and rendered in **Direct3D 9**. Running it on a Mac needs a translation stack
-> (Wine → DXVK → MoltenVK → Metal) **and the exact combination** of versions. Swapping any
-> piece breaks it in a different way. This repo documents the combo that works and ships a
-> `grandchase` command to launch the game.
+> **Why it's hard:** GrandChase is Windows-only, protected by the **Themida** anti-tamper, and
+> rendered in **Direct3D 9**. Running it on a Mac needs a working Wine build (to run the app
+> and render Steam's login) plus a way past Themida. This repo documents the setup that works
+> and ships a `grandchase` command to launch the game.
 
 ---
 
@@ -20,14 +19,16 @@ Verified: **MacBook Pro M1 Max, macOS 27**, June 2026 — reaches the lobby and 
 
 | Layer | Component | Role |
 |---|---|---|
-| Wine | **wine-proton 10** | "new wow64" → runs 32-bit on macOS 27 **and** renders the Steam login (CEF) |
-| DirectX → Vulkan | **DXVK 2.7** | translates the game's D3D9 |
-| Vulkan → Metal | **MoltenVK v1.4.1** | must be the **modern pair** with DXVK 2.7 |
+| Everything | **wine-proton 10** | "new wow64" runs the app on macOS 27, renders Steam's CEF login, **and provides wined3d** — which renders the game's D3D9 through OpenGL → Metal. Ships its own MoltenVK and the GL→Metal path. |
 | Anti-tamper | genuine **VC++ runtimes** + `native` overrides | gets past Themida's "Wrong DLL present" |
-| Render | `dxvk.conf`: `d3d9.floatEmulation = Strict` | fixes vertex math |
+| Launch | Steam `-applaunch 985810` | the game needs the environment Steam injects |
 
-**The combination matters.** DXVK 2.7 **+** MoltenVK **1.4.1** is the pair that works. See
-[dead ends](#-dead-ends-to-save-you-time) for what does NOT.
+**Render path** (confirmed by `vmmap` on the running game):
+**GrandChase (D3D9) → wined3d → OpenGL → Apple's GL-on-Metal → Metal.**
+
+The only external component you have to bring is **wine-proton** — it contains everything graphics-related.
+There is **no DXVK and no MoltenVK override** in the picture; see [dead ends](#-dead-ends-to-save-you-time)
+for why earlier versions of this guide thought otherwise.
 
 ---
 
@@ -35,32 +36,17 @@ Verified: **MacBook Pro M1 Max, macOS 27**, June 2026 — reaches the lobby and 
 
 - **Apple Silicon** Mac + **Rosetta 2** (`softwareupdate --install-rosetta --agree-to-license`)
 - A **Steam** account with **GrandChase** in your library
-- The 3 free components: **wine-proton 10**, **DXVK 2.7**, **MoltenVK v1.4.1**
+- **wine-proton 10** — the only external piece
 
-### Where the components come from
+### Where wine-proton comes from
 
-Run **[`fetch.sh`](fetch.sh)** — it downloads the two **version-pinned** pieces (the matched pair
-that actually renders the game) straight from upstream GitHub Releases, into `~/Games/`:
-
-- **DXVK 2.7** → `~/Games/dxvk27/wine/x86_64-windows/{d3d9,d3d11,dxgi}.dll`
-- **MoltenVK 1.4.1** → `~/Games/mvk141/libMoltenVK.dylib`
-
-The only piece `fetch.sh` does **not** download is **wine-proton 10** (~2 GB). Get it via
-**[GameHub](https://www.gamehubapp.com/)** (free) — it downloads wine-proton, which then runs
-**outside** of it — and put it at `~/Games/wine-proton/`. Final layout:
+The easiest way to get wine-proton is via **[GameHub](https://www.gamehubapp.com/)** (free), which
+downloads it — then it runs **outside** of GameHub. Put it under `~/Games/`:
 
 ```
-~/Games/wine-proton/               # wine-proton 10 (bin/, lib/) — via GameHub
-~/Games/dxvk27/wine/               # DXVK 2.7 (x86_64-windows/{d3d9,d3d11,dxgi}.dll) — fetch.sh
-~/Games/mvk141/libMoltenVK.dylib   # MoltenVK 1.4.1 — fetch.sh
-~/Games/gc-proton/                 # Wine prefix (created during setup)
+~/Games/wine-proton/   # wine-proton 10 (bin/, lib/) — brings wined3d + MoltenVK + the GL→Metal path
+~/Games/gc-proton/     # Wine prefix (Steam + GrandChase + Themida fix), created during setup
 ```
-
-> **Why pinned:** the **DXVK 2.7 + MoltenVK 1.4.1** pair is what renders the 3D. Pulling them from
-> GameHub is a version lottery (a GameHub reset is what broke this setup once) — `fetch.sh` grabs
-> the exact releases every time. The verified June 2026 run used a DXVK 2.7 built from the CrossOver
-> LGPL source; `fetch.sh` installs the upstream 2.7 release (same version), with building
-> [from source](https://github.com/doitsujin/dxvk) as the fallback.
 
 ---
 
@@ -69,19 +55,15 @@ The only piece `fetch.sh` does **not** download is **wine-proton 10** (~2 GB). G
 ```sh
 git clone https://github.com/matheustimbo/grandchase-mac.git
 cd grandchase-mac
-chmod +x grandchase setup.sh fetch.sh
+chmod +x grandchase setup.sh
 
-# 1. Download the pinned DXVK 2.7 + MoltenVK 1.4.1 into ~/Games:
-./fetch.sh
-#    (wine-proton ~2 GB is NOT fetched — get it via GameHub; see "Where the components come from".)
-
-# 2. Create the prefix and install Steam + GrandChase into it (via wine-proton).
+# 1. Create the prefix and install Steam + GrandChase into it (via wine-proton).
 #    Log into Steam (the window renders) and install the game.
 
-# 3. Apply the Themida fix (genuine VC++ runtimes as 'native') + dxvk.conf:
+# 2. Apply the Themida fix (genuine VC++ runtimes as 'native'):
 ./setup.sh ~/Games/gc-proton
 
-# 4. Install the command:
+# 3. Install the command:
 cp grandchase /opt/homebrew/bin/
 ```
 
@@ -98,7 +80,6 @@ grandchase kill     # closes everything
 ```
 
 Boot sequence: `UnEnter` → `Loading 1..16` → visible loading → lobby (`State 15`).
-The first launch is slow (compiling shaders).
 
 ---
 
@@ -108,28 +89,25 @@ The first launch is slow (compiling shaders).
 |---|---|---|
 | `Wrong DLL present` (Themida) | Wine's builtin VC++ runtimes | **genuine** runtimes + `native` overrides (done by `setup.sh`) |
 | Steam login won't render | wrong Wine for the CEF webhelper | use **wine-proton** (it renders CEF) |
-| **Invisible 3D characters / cursor** | wrong DXVK×MoltenVK pair | **DXVK 2.7 + MoltenVK 1.4.1** (modern pair) |
-| `Install DirectX...` | DXVK can't create the device | MoltenVK incompatible with that DXVK — use the right pair |
 | Hangs at `UnEnter` when launching the `.exe` directly | missing Steam launch env | launch via `-applaunch 985810` (the launcher does this) |
-| **Stutters when entering a new scene** | DXVK compiling shaders (synchronous) | normal; the cache (`.dxvk-cache`) makes it **not repeat** — pre-warm by playing your modes once |
+| Steam logs off with `Session Replaced` | the account logged in elsewhere | close Steam on other devices, then relaunch |
+| **Stutters when entering a new scene** | wined3d compiling shaders on the fly (synchronous) | inherent — wined3d does **not** persist compiled shaders to disk, so new scenes / new sessions can stutter once. Lowering in-game effects helps. |
 | ~1min freeze on alt-tab, then disconnect | D3D9 device loss + server timeout | inherent; minimize time in the background |
-
-### About shader stutter
-Metal/MoltenVK does **not** support asynchronous pipeline compilation (Graphics Pipeline
-Library), so the **first** visit to each scene stutters while DXVK compiles. `dxvk.conf` enables
-the **on-disk cache** (`enableStateCache`), so each scene compiles **once ever** and never stutters
-there again, even after a restart. Play through your modes once to "pre-warm" and it's smooth.
 
 ---
 
 ## 🚧 Dead ends (to save you time)
 
+- **DXVK + a specific MoltenVK "matched pair" — looks necessary, isn't.** Earlier versions of this
+  guide claimed a "DXVK 2.7 + MoltenVK 1.4.1" pair was the thing that rendered the 3D. Runtime
+  inspection of the running game (`vmmap`) proved that false: the process loads wine-proton's
+  **builtin wined3d** and **never DXVK**, and an A/B with the MoltenVK 1.4.1 override removed
+  rendered **identically** on wine-proton's bundled MoltenVK. The `dxvk27` folder / `dxvk.conf` /
+  `WINEDLLPATH` never engaged — without a `native` override for `d3d9`, Wine's builtin wined3d
+  always wins. None of it was load-bearing.
 - **plain wine / minimal CrossOver-source build** → Steam's CEF webhelper won't render (can't log in).
 - **GPTK 7.7 / WhiskyWine** → 32-bit doesn't work on macOS 27.
 - **CrossOver 24 (Sikarugir)** → 32-bit OK, but the Steam CEF window is 0×0.
-- **dxvk-1.10.3 + MoltenVK 1.2.1** → 4 shaders fail to compile → invisible characters.
-- **dxvk-1.10.3 + MoltenVK 1.4.x** → device creation fails ("Install DirectX").
-- **MoltenVK with "faked" features** (forced geometryShader etc.) → wrong rendering.
 - **`d3d9` is NOT the Themida trigger** — the VC++ runtime is. Swapping d3d9 won't fix "Wrong DLL".
 - **Launching `GrandChase.exe` directly** → hangs waiting for the Steam env; use `-applaunch`.
 
@@ -137,10 +115,9 @@ there again, even after a restart. Play through your modes once to "pre-warm" an
 
 ## 💸 Alternative: CrossOver (paid / trial)
 
-Before finding the free stack, the path that worked was **CrossOver** (14-day trial). There the
-renderer uses native **D3DMetal** (wined3d → Metal), not DXVK. Summary: CrossOver bottle + genuine
-VC++ runtimes (Themida) + native renderer + `-applaunch`. `setup.sh` applies the Themida overrides
-to either a CrossOver bottle or the wine-proton prefix.
+Before finding the free wine-proton path, the first thing that worked was **CrossOver** (14-day trial):
+a CrossOver bottle + genuine VC++ runtimes (Themida) + its native renderer + `-applaunch`. `setup.sh`
+applies the Themida overrides to either a CrossOver bottle or the wine-proton prefix.
 
 It works, but the **free wine-proton path above is the recommended one**.
 
@@ -149,8 +126,8 @@ It works, but the **free wine-proton path above is the recommended one**.
 ## Credits
 
 Built on open-source projects: [Wine](https://www.winehq.org/)/[Proton](https://github.com/ValveSoftware/Proton),
-[DXVK](https://github.com/doitsujin/dxvk), [MoltenVK](https://github.com/KhronosGroup/MoltenVK).
-DXVK and MoltenVK are pulled from their upstream releases by [`fetch.sh`](fetch.sh); wine-proton comes from [GameHub](https://www.gamehubapp.com/). Themida © Oreans.
+[wined3d](https://www.winehq.org/), [MoltenVK](https://github.com/KhronosGroup/MoltenVK).
+wine-proton is obtained via [GameHub](https://www.gamehubapp.com/). Themida © Oreans.
 
 > Not affiliated with KOG / Playpark / Valve. Run games from **your own account**.
 > This repo only documents compatibility configuration — it does not distribute the game or bypass DRM.
