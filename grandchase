@@ -19,7 +19,15 @@ export DYLD_FALLBACK_LIBRARY_PATH="$WP/lib:$WP/lib/wine/x86_64-unix"
 export WINEESYNC=1
 export WINEENGINE_GPTK_DXGI_SPOOF_ENABLED=1
 
+# Processo da Steam de pé? (não diz nada sobre login)
 steam_up() { pgrep -f "steamwebhelper.exe" >/dev/null 2>&1 || pgrep -f "[s]team.exe" >/dev/null 2>&1; }
+
+# Logado de verdade? Última transição de estado no connection_log = "Logged On"
+# (e não "Logged Off"). É isso que distingue "Steam aberta" de "Steam usável".
+steam_logged_in() {
+  [ -f "$CONNLOG" ] || return 1
+  [ "$(grep -aoE '\[Logged O(n|ff)' "$CONNLOG" 2>/dev/null | tail -1)" = "[Logged On" ]
+}
 
 case "$1" in
   kill)
@@ -31,15 +39,25 @@ case "$1" in
     "$WINE" "$STEAM"
     ;;
   *)
+    # Sobe a Steam se nem o processo existe. SEM -silent: assim, se a sessão
+    # não logar sozinha, a janela aparece pra você logar à mão.
     if ! steam_up; then
-      echo "Subindo a Steam (login)..."
-      "$WINE" "$STEAM" -silent >/dev/null 2>&1 &
-      for i in $(seq 1 24); do
+      echo "Subindo a Steam..."
+      "$WINE" "$STEAM" >/dev/null 2>&1 &
+    fi
+    # Espera LOGAR (não só o processo subir). Até ~2min.
+    if ! steam_logged_in; then
+      echo "Aguardando login na Steam..."
+      for i in $(seq 1 40); do
+        steam_logged_in && break
         sleep 3
-        grep -E "$(date '+%Y-%m-%d %H')" "$CONNLOG" 2>/dev/null | grep -qiE "RecvMsgClientLogOnResponse" && break
       done
     fi
-    echo "Abrindo o GrandChase..."
+    if ! steam_logged_in; then
+      echo "A Steam não logou. Faça login na janela da Steam e rode 'grandchase' de novo."
+      exit 1
+    fi
+    echo "Logado. Abrindo o GrandChase..."
     "$WINE" "$STEAM" -applaunch 985810 >/dev/null 2>&1 &
     echo "Pronto. Passa pelo loading e entra no lobby."
     ;;
